@@ -1,4 +1,6 @@
 import { useEffect, createContext, useState, useContext } from "react";
+import { usePagamentoContext } from "./Pagamento";
+import { UsuarioContext } from "./Usuario";
 
 export const CarrinhoContext = createContext();
 CarrinhoContext.displayName = "Carrinho";
@@ -32,6 +34,8 @@ export const useCarrinhoContext = () => {
     valorTotalCarrinho,
     setValorTotalCarrinho,
   } = useContext(CarrinhoContext);
+  const { formaDePagamento } = usePagamentoContext();
+  const {setSaldo} = useContext(UsuarioContext)
 
   function mudarQuantidade(id, quantidade) {
     return carrinho.map((itemDoCarrinho) => {
@@ -65,23 +69,34 @@ export const useCarrinhoContext = () => {
     setCarrinho(mudarQuantidade(id, -1));
   }
 
+  function efetuarCompra(){
+    setCarrinho([]);
+    setSaldo(saldoAtual => saldoAtual - valorTotalCarrinho)
+
+  }
+
   useEffect(() => {
-    const { novoTotal, novaQuantidadeDeProdutos } = carrinho.reduce((contador, produto) => ({
-      novaQuantidadeDeProdutos: contador.novaQuantidadeDeProdutos + produto.quantidade,
-      novoTotal: contador.novoTotal + (produto.valor * produto.quantidade)
-    }), {
-      novaQuantidadeDeProdutos: 0,
-      novoTotal: 0
-    });
+    const { novoTotal, novaQuantidadeDeProdutos } = carrinho.reduce(
+      (contador, produto) => ({
+        novaQuantidadeDeProdutos:
+          contador.novaQuantidadeDeProdutos + produto.quantidade,
+        novoTotal: contador.novoTotal + produto.valor * produto.quantidade,
+      }),
+      {
+        novaQuantidadeDeProdutos: 0,
+        novoTotal: 0,
+      }
+    );
     setQuantidadeProdutos(novaQuantidadeDeProdutos);
-    setValorTotalCarrinho(novoTotal)
-  }, [carrinho, setQuantidadeProdutos, setValorTotalCarrinho]);
+    setValorTotalCarrinho(novoTotal * formaDePagamento.juros);
+  }, [carrinho, setQuantidadeProdutos, setValorTotalCarrinho, formaDePagamento]);
   return {
     carrinho,
     setCarrinho,
     adicionarProduto,
     removerProduto,
     quantidadeProdutos,
-    valorTotalCarrinho
+    valorTotalCarrinho,
+    efetuarCompra
   };
 };

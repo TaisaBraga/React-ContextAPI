@@ -8,7 +8,10 @@ import {
 import MuiAlert from "@material-ui/lab/Alert";
 import { useCarrinhoContext } from "common/context/Carrinho";
 import { usePagamentoContext } from "common/context/Pagamento";
+import { UsuarioContext } from "common/context/Usuario";
 import Produto from "components/Produto";
+import { useContext } from "react";
+import { useMemo } from "react";
 import { useState } from "react";
 import { useHistory } from "react-router-dom";
 import {
@@ -19,11 +22,17 @@ import {
 } from "./styles";
 
 function Carrinho() {
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const { carrinho, valorTotalCarrinho } = useCarrinhoContext();
-  const { tiposDePagamento, formaDePagamento, mudarFormaPagamento } =
-  usePagamentoContext();
   const history = useHistory();
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const { carrinho, valorTotalCarrinho, efetuarCompra } = useCarrinhoContext();
+  const { saldo = 0 } = useContext(UsuarioContext);
+  const { tiposDePagamento, formaDePagamento, mudarFormaPagamento } =
+    usePagamentoContext();
+  const totalCompra = useMemo(
+    () => saldo - valorTotalCarrinho,
+    [saldo, valorTotalCarrinho]
+  );
+
   return (
     <Container>
       <Voltar onClick={() => history.goBack()} />
@@ -37,7 +46,7 @@ function Carrinho() {
           value={formaDePagamento.id}
           onChange={(event) => mudarFormaPagamento(event.target.value)}
         >
-          {tiposDePagamento.map(pagamento => (
+          {tiposDePagamento.map((pagamento) => (
             <MenuItem value={pagamento.id} key={pagamento.id}>
               {pagamento.nome}
             </MenuItem>
@@ -51,17 +60,19 @@ function Carrinho() {
         </div>
         <div>
           <h2> Saldo: </h2>
-          <span> R$ </span>
+          <span> R$ {Number(saldo).toFixed(2)}</span>
         </div>
         <div>
           <h2> Saldo Total: </h2>
-          <span> R$ </span>
+          <span> R$ {Number(totalCompra).toFixed(2)}</span>
         </div>
       </TotalContainer>
       <Button
         onClick={() => {
+          efetuarCompra();
           setOpenSnackbar(true);
         }}
+        disabled={totalCompra < 0 || carrinho.length === 0}
         color="primary"
         variant="contained"
       >
